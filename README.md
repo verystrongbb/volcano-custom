@@ -1,7 +1,7 @@
 **相关内容：**
 
 Workflow
-![alt text](image-1.png)
+![image](https://github.com/user-attachments/assets/21cb8231-8674-410a-a607-f2da79c1bb78)
 1. Action
 
    action定义了调度各环节中需要执行的动作
