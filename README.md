@@ -16,13 +16,13 @@ Workflow
 
 查看名为volcano-scheduler-configmap的configmap
 ```mermaid
-# kubectl get configmap -nvolcano-system
+#kubectl get configmap -nvolcano-system
 NAME                          DATA   AGE
 volcano-scheduler-configmap   1      6d2h
 ```
 查看configmap的data部分详情
 ```mermaid
-# kubectl get configmap volcano-scheduler-configmap -nvolcano-system -oyaml
+#kubectl get configmap volcano-scheduler-configmap -nvolcano-system -oyaml
 apiVersion: v1
 data:
 volcano-scheduler.conf: |
