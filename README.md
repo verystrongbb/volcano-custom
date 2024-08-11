@@ -58,11 +58,34 @@ uid: 1effe4d6-126c-42d6-a3a4-b811075c30f5
 
 **自定义**
 
-1. 自定义ACTION
+1. 自定义调度器主要是自定义action和plugin这两个部分，ACTION & Plugin的接口如下，两者通过session对象进行关联
+   ![image](https://github.com/user-attachments/assets/a1f6be1b-aa85-4bf4-a9b1-1853a2da1f98)
 
- 
+2. 自定义ACTION
+- action主要是调用经plugin处理的结果
+- 代码示例
+  以下是自定义了一个打印job信息的action，需要将具体的打印函数注册到session_plugin中
+  ![image](https://github.com/user-attachments/assets/d5fc9dda-9319-434c-940c-353757c45303)
 
-2. 自定义Plugin
+
+3. 自定义Plugin
 - In general, a plugin mainly consists of 3 functions: Name OnSessionOpen OnSessionClose. Name provides the name of the plugin. OnSessionOpen executes some operations when a session starts and register some functions about scheduling details. OnSessionClose clean up some resource when a session finishes.
-3. References
--  手把手教你构建自己的Action和Plugin https://www.bilibili.com/video/BV1pV4y1F7tB/?spm_id_from=333.1007.top_right_bar_window_history.content.click
+- 代码示例
+  ![image](https://github.com/user-attachments/assets/f76fa88c-accb-45e5-b5ce-14ad44682207)
+
+  
+  其中 AddPrintFns需要注册到session_plugin中和action联系起来
+  ![image](https://github.com/user-attachments/assets/17450c63-b13f-472c-aaa4-437756a1c8cb)
+
+
+
+  同时在session中定义成员变量printJobFns
+  ![image](https://github.com/user-attachments/assets/b7cf9943-7907-4868-be9f-4fdae5c8cd0f)
+
+4. 自定义时可能用上的api
+  ![image](https://github.com/user-attachments/assets/a725bad2-bbeb-404f-b4e4-52214e0c78ee)
+
+
+5. References
+- 手把手教你构建自己的Action和Plugin https://www.bilibili.com/video/BV1pV4y1F7tB/?spm_id_from=333.1007.top_right_bar_window_history.content.click
+- Volcano 原理、源码分析 https://www.cnblogs.com/daniel-hutao/p/17935624.html#4-%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90
