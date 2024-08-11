@@ -59,33 +59,39 @@ uid: 1effe4d6-126c-42d6-a3a4-b811075c30f5
 **自定义**
 
 1. 自定义调度器主要是自定义action和plugin这两个部分，ACTION & Plugin的接口如下，两者通过session对象进行关联
-   ![image](https://github.com/user-attachments/assets/a1f6be1b-aa85-4bf4-a9b1-1853a2da1f98)
+    <br />![image](https://github.com/user-attachments/assets/a1f6be1b-aa85-4bf4-a9b1-1853a2da1f98)
 
 2. 自定义ACTION
 - action主要是调用经plugin处理的结果
 - 代码示例
-  以下是自定义了一个打印job信息的action，需要将具体的打印函数注册到session_plugin中
-  ![image](https://github.com/user-attachments/assets/d5fc9dda-9319-434c-940c-353757c45303)
+   <br />以下是自定义了一个打印job信息的action，需要将具体的打印函数注册到session_plugin中
+   <br />![image](https://github.com/user-attachments/assets/249b3f22-d874-4d91-9862-dc22a2879b7c)
+
 
 
 3. 自定义Plugin
 - In general, a plugin mainly consists of 3 functions: Name OnSessionOpen OnSessionClose. Name provides the name of the plugin. OnSessionOpen executes some operations when a session starts and register some functions about scheduling details. OnSessionClose clean up some resource when a session finishes.
 - 代码示例
-  ![image](https://github.com/user-attachments/assets/f76fa88c-accb-45e5-b5ce-14ad44682207)
+   <br />![image](https://github.com/user-attachments/assets/9b470f31-ea2d-436f-88e1-427c5b117015)
+
+
+
+  <br />其中 AddPrintFns需要注册到session_plugin中和action联系起来
+  <br />![image](https://github.com/user-attachments/assets/b2bc569c-4138-4d30-af08-1e5c7af4a34c)
 
   
-  其中 AddPrintFns需要注册到session_plugin中和action联系起来
-  ![image](https://github.com/user-attachments/assets/dc06a7a3-df2c-4b14-ae6a-4c146eac45bb)
 
+   <br />同时在session中定义成员变量printJobFns
+   <br />![image](https://github.com/user-attachments/assets/3ab0ac3f-ebd4-46a8-8d24-e8778d997393)
 
+  
 
-
-  同时在session中定义成员变量printJobFns
-  ![image](https://github.com/user-attachments/assets/def3d177-ee1d-4be2-830a-db944409fd52)
-
-
+  
 4. 自定义时可能用上的api
-  ![image](https://github.com/user-attachments/assets/a725bad2-bbeb-404f-b4e4-52214e0c78ee)
+    <br />![image](https://github.com/user-attachments/assets/572167f3-c937-4512-83d8-13f5ab90921f)
+
+
+  
 
 
 5. References
