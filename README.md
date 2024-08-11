@@ -75,12 +75,14 @@ uid: 1effe4d6-126c-42d6-a3a4-b811075c30f5
 
   
   其中 AddPrintFns需要注册到session_plugin中和action联系起来
-  ![image](https://github.com/user-attachments/assets/17450c63-b13f-472c-aaa4-437756a1c8cb)
+  ![image](https://github.com/user-attachments/assets/dc06a7a3-df2c-4b14-ae6a-4c146eac45bb)
+
 
 
 
   同时在session中定义成员变量printJobFns
-  ![image](https://github.com/user-attachments/assets/b7cf9943-7907-4868-be9f-4fdae5c8cd0f)
+  ![image](https://github.com/user-attachments/assets/def3d177-ee1d-4be2-830a-db944409fd52)
+
 
 4. 自定义时可能用上的api
   ![image](https://github.com/user-attachments/assets/a725bad2-bbeb-404f-b4e4-52214e0c78ee)
