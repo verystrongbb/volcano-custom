@@ -100,7 +100,7 @@ uid: 1effe4d6-126c-42d6-a3a4-b811075c30f5
 
 6. 以volcano自带的action-backfill和plugin-drf为例
 
-      </br>backfill 算法通过筛选和优先级排序，将待调度的任务分配到最合适的节点，主要分Eexecute部分：
+      </br>backfill 算法通过筛选和优先级排序，将待调度的任务分配到最合适的节点，主要分析execute部分：
 
       </br>初始化：
       - 通过 ssn.PredicateForAllocateAction 获取用于节点筛选的函数 predicateFunc
