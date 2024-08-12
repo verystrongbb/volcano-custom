@@ -97,3 +97,67 @@ uid: 1effe4d6-126c-42d6-a3a4-b811075c30f5
 5. References
 - 手把手教你构建自己的Action和Plugin https://www.bilibili.com/video/BV1pV4y1F7tB/?spm_id_from=333.1007.top_right_bar_window_history.content.click
 - Volcano 原理、源码分析 https://www.cnblogs.com/daniel-hutao/p/17935624.html#4-%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90
+
+6. 以volcano自带的action-backfill和plugin-drf为例
+
+      </br>backfill 算法通过筛选和优先级排序，将待调度的任务分配到最合适的节点，主要分Eexecute部分：
+
+      </br>初始化：
+      - 通过 ssn.PredicateForAllocateAction 获取用于节点筛选的函数 predicateFunc
+      - 调用 backfill.pickUpPendingTasks(ssn) 获取待调度的任务列表 pendingTasks
+      - *pickUpPendingTasks 是该算法里定义的函数，主要是从ssn对象中获取queue（通过QueueOrderFn获取，结果取决于使用的plugin）、job和job中的task信息，处理各种状态的task（pending、piplined）并将其添加到对应tasks优先队列中，处理task后再将job添加到jobs优先队列，最后提取各个优先队列的信息返回pendingtasks
+
+      </br>遍历待调度任务：
+      
+      - 对于每个待调度任务 task，获取其所属的作业 job
+      - 创建一个PredicateHelper对象 ph 和一个FitErrors对象 fe
+      - 调用 ssn.PrePredicateFn(task) （结果取决于使用的plugin）执行PrePredicate检查，如果失败，则记录错误并跳过该任务。
+
+      </br>节点筛选：
+
+      - 调用 ph.PredicateNodes(task, ssn.NodeList, predicateFunc, true)  （predicateFunc结果取决于使用的plugin）筛选出符合条件的节点 predicateNodes，并记录 fitErrors
+      - 如果没有符合条件的节点，则记录错误并跳过该任务
+      
+
+      </br>节点选择：
+
+      - 如果有多个符合条件的节点，则调用 util.PrioritizeNodes 对节点进行优先级排序，并选择最佳节点 node
+      - 如果没有最佳节点，则选择优先级最高的节点
+
+      </br>任务分配：
+
+      - 调用 ssn.Allocate(task, node) 将任务分配到选定的节点上，如果分配失败，则记录错误并继续处理下一个任务
+      - 更新metrics
+
+      </br>更新状态：
+
+      - 如果任务未能成功分配，则记录适配错误
+
+
+
+
+      </br>drf 主要分析onSessionOpen部分：
+
+      </br>初始化：
+      - 通过 ssn.PredicateForAllocateAction 获取用于节点筛选的函
+      - 
+
+      </br>AddPreemptableFn：
+      
+      - 
+     
+
+      </br>AddJobOrderFn：
+
+      - 
+      
+      
+      </br> 与action的联系： 
+
+      - 
+
+  
+
+7. 使用自定义 plugin
+- 文件 \volcano-master\docs\design\custom-plugin.md 给出了使用自定义plugin的方法
+
