@@ -70,7 +70,7 @@ uid: 1effe4d6-126c-42d6-a3a4-b811075c30f5
 
 
 3. 自定义Plugin
-- In general, a plugin mainly consists of 3 functions: Name OnSessionOpen OnSessionClose. Name provides the name of the plugin. OnSessionOpen executes some operations when a session starts and register some functions about scheduling details. OnSessionClose clean up some resource when a session finishes.
+- docs\user-guide\how_to_configure_scheduler.md中给出了一个plugin的核心部分：In general, a plugin mainly consists of 3 functions: Name OnSessionOpen OnSessionClose. Name provides the name of the plugin. OnSessionOpen executes some operations when a session starts and register some functions about scheduling details. OnSessionClose clean up some resource when a session finishes.
 - 代码示例
    <br />![image](https://github.com/user-attachments/assets/9b470f31-ea2d-436f-88e1-427c5b117015)
 
