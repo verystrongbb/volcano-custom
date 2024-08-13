@@ -70,7 +70,7 @@ uid: 1effe4d6-126c-42d6-a3a4-b811075c30f5
 
 
 3. 自定义Plugin
-- docs\user-guide\how_to_configure_scheduler.md中给出了一个plugin的核心部分：In general, a plugin mainly consists of 3 functions: Name OnSessionOpen OnSessionClose. Name provides the name of the plugin. OnSessionOpen executes some operations when a session starts and register some functions about scheduling details. OnSessionClose clean up some resource when a session finishes.
+- *\volcano-master\docs\user-guide\how_to_configure_scheduler.md*中给出了一个plugin的核心部分：In general, a plugin mainly consists of 3 functions: Name OnSessionOpen OnSessionClose. Name provides the name of the plugin. OnSessionOpen executes some operations when a session starts and register some functions about scheduling details. OnSessionClose clean up some resource when a session finishes.
 - 代码示例
    <br />![image](https://github.com/user-attachments/assets/9b470f31-ea2d-436f-88e1-427c5b117015)
 
@@ -97,7 +97,7 @@ uid: 1effe4d6-126c-42d6-a3a4-b811075c30f5
         </br>![image](https://github.com/user-attachments/assets/fc2cbbdd-768f-4040-b01a-9bf43ebf55ad)
 
 
-      - *pickUpPendingTasks 是该算法里定义的函数，主要是从ssn对象中获取queue（通过QueueOrderFn获取，结果取决于使用的plugin）、job和job中的task信息，处理各种状态的task（pending、piplined）并将其添加到对应tasks优先队列中，处理task后再将job添加到jobs优先队列，最后提取各个优先队列的信息返回pendingtasks
+      - *pickUpPendingTasks* 是该算法里定义的函数，主要是从ssn对象中获取queue（通过QueueOrderFn获取，结果取决于使用的plugin）、job和job中的task信息，处理各种状态的task（pending、piplined）并将其添加到对应tasks优先队列中，处理task后再将job添加到jobs优先队列，最后提取各个优先队列的信息返回pendingtasks
 
       </br>遍历待调度任务：
       
@@ -175,11 +175,12 @@ uid: 1effe4d6-126c-42d6-a3a4-b811075c30f5
          </br>![image](https://github.com/user-attachments/assets/4eaa2f66-3a4b-4b7f-9489-29f4597b3522)
 
       </br>*开启了hierarchy之后还有AddQueueOrderFn和AddReclaimableFn，原理同AddJobOrderFn和AddPreemptableFn
-            </br>![image](https://github.com/user-attachments/assets/d0ef20bb-0ce9-4158-988b-b52c419dff51)
+
+      </br>![image](https://github.com/user-attachments/assets/d0ef20bb-0ce9-4158-988b-b52c419dff51)
 
       
 7. 使用自定义 plugin
-- 文件 \volcano-master\docs\design\custom-plugin.md 给出了使用自定义plugin的方法
+- 文件 *\volcano-master\docs\design\custom-plugin.md* 给出了使用自定义plugin的方法
 
 7. References
 - 手把手教你构建自己的Action和Plugin https://www.bilibili.com/video/BV1pV4y1F7tB/?spm_id_from=333.1007.top_right_bar_window_history.content.click
