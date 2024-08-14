@@ -95,36 +95,176 @@ uid: 1effe4d6-126c-42d6-a3a4-b811075c30f5
       4.  PredicateFn(Plugin: Predicates),
       5.  PreemptableFn(Plugin: Conformance, Gang, DRF).
 
-      </br>***主要的逻辑如下：***
+      </br>***该action主要的逻辑如下：***
       
       </br>先用IsPending、JobValid、JobStarving等筛选出需要加入抢占队列的job和task:
 
       - IsPending
-      - JobValid
-      - JobStarving
+      ```
+         // IsPending returns whether job is in pending status
+         func (ji *JobInfo) IsPending() bool {
+	         return ji.PodGroup == nil ||
+		      ji.PodGroup.Status.Phase == scheduling.PodGroupPending ||
+		      ji.PodGroup.Status.Phase == ""
+         }
+      ```
+      - JobValid，需要plugin实现jobValidFns
+      ```
+      // JobValid invoke jobvalid function of the plugins
+      func (ssn *Session) JobValid(obj interface{}) *api.ValidateResult {
+         for _, tier := range ssn.Tiers {
+            for _, plugin := range tier.Plugins {
+               jrf, found := ssn.jobValidFns[plugin.Name]
+               if !found {
+                  continue
+               }
+
+               if vr := jrf(obj); vr != nil && !vr.Pass {
+                  return vr
+               }
+            }
+         }
+            return nil
+      }
+      ```
+      - JobStarving，需要plugin实现jobStarvingFns
+      ```
+         // JobStarving invoke jobStarving function of the plugins
+         // Check if job still need more resource
+         func (ssn *Session) JobStarving(obj interface{}) bool {
+            var hasFound bool
+            for _, tier := range ssn.Tiers {
+               for _, plugin := range tier.Plugins {
+                  if !isEnabled(plugin.EnabledJobStarving) {
+                     continue
+                  }
+                  jrf, found := ssn.jobStarvingFns[plugin.Name]
+                  if !found {
+                     continue
+                  }
+                  hasFound = true
+
+                  if !jrf(obj) {
+                     return false
+                  }
+               }
+               // this tier registered function
+               if hasFound {
+                  return true
+               }
+            }
+            return false
+         }
+      ```
+
       - 用map将task和job优先队列映射到其所属的job和queue，优先级由TaskOrderFn、JobOrderFn两个函数决定，其定义则取决于调用的plugin，比如DRF就定义了一个JobOrderFn，通过AddJobOrderFn注册到ssn对象中
+      ```
+      if _, found := preemptorsMap[job.Queue]; !found {
+				preemptorsMap[job.Queue] = util.NewPriorityQueue(ssn.JobOrderFn)
+			}
+			preemptorsMap[job.Queue].Push(job)
+			underRequest = append(underRequest, job)
+			preemptorTasks[job.UID] = util.NewPriorityQueue(ssn.TaskOrderFn)
+			for _, task := range job.TaskStatusIndex[api.Pending] {
+				preemptorTasks[job.UID].Push(task)
+			}
+      ```
 
       </br>然后定义抢占行为，preempt 动作的抢占分为两种粒度，一个是同一queue中的job互相抢占，另一个是同一job的task间互相抢占：
 
       - 同一queue中的job可以互相抢占，对每个queue建立一个循环进行如下逻辑：
 
       1. 检查抢占队列preemptorsMap是否存在preemptors(一组job)
+
+      ```
+      preemptors := preemptorsMap[queue.UID]
+			// If no preemptors, no preemption.
+			if preemptors == nil || preemptors.Empty() {
+				klog.V(4).Infof("No preemptors in Queue <%s>, break.", queue.Name)
+				break
+			}
+      ```
+
       2. 若存在，最高优先级的job出队作为preemptorJob
+      ```
+      preemptorJob := preemptors.Pop().(*api.JobInfo)
+      ```
       3. new一个statement对象用于commit和dicard操作
       4. 对每一个作为preemptor的job，检查还有没有preemptorTasks，若没有则跳过
-      5. 从task优先队列pop一个task进行preempt操作
-      6. 检查并提交，preemptorJob重新入队进入下一次循环
+      ```
+      // If job is not request more resource, then stop preempting.
+				if !ssn.JobStarving(preemptorJob) {
+					break
+				}
 
-      - 同一job的task间可以互相抢占，对每个underRequest的job进行如下逻辑（代码有个问题，这里是写在queue的循环里面的但是并没有用上queue，感觉可以将这个循环分离出来）：
+				// If not preemptor tasks, next job.
+				if preemptorTasks[preemptorJob.UID].Empty() {
+					klog.V(3).Infof("No preemptor task in job <%s/%s>.",
+						preemptorJob.Namespace, preemptorJob.Name)
+					break
+				}
+      ```
+      5. 从task优先队列pop一个task进行preempt操作(此处还定义了一个filter用来过滤task)
+      ```
+      	   preemptor := preemptorTasks[preemptorJob.UID].Pop().(*api.TaskInfo)
+				assigned, err = preempt(ssn, stmt, preemptor, func(task *api.TaskInfo) bool {
+					// Ignore non running task.
+					if !api.PreemptableStatus(task.Status) {
+						return false
+					}
+					// BestEffort pod is not supported to preempt unBestEffort pod.
+					if preemptor.BestEffort && !task.BestEffort {
+						return false
+					}
+					if !task.Preemptable {
+						return false
+					}
+					job, found := ssn.Jobs[task.Job]
+					if !found {
+						return false
+					}
+					// Preempt other jobs within queue
+					return job.Queue == preemptorJob.Queue && preemptor.Job != task.Job
+				}, ph)
+				if err != nil {
+					klog.V(3).Infof("Preemptor <%s/%s> failed to preempt Task , err: %s", preemptor.Namespace, preemptor.Name, err)
+				}
+      ```
+      6. 检查并提交，preemptorJob重新入队进入下一次循环
+      ```
+      // Commit changes only if job is pipelined, otherwise try next job.
+			if ssn.JobPipelined(preemptorJob) {
+				stmt.Commit()
+			} else {
+				stmt.Discard()
+				continue
+			}
+
+			if assigned {
+				preemptors.Push(preemptorJob)
+			}
+      ```
+
+      - 同一job的task间可以互相抢占，对每个underRequest的job进行如下逻辑,和上述流程类似（代码有个问题，这里是写在queue的循环里面的但是并没有用上queue，感觉可以将这个循环分离出来）：
       
       1. 重新初始化一个优先队列preemptorTasks（因为之前的代码更新过preemptorTasks），将处于Pending的task加入其中，以jobuid为索引
+      ```
+      for _, job := range underRequest {
+      // Fix: preemptor numbers lose when in same job
+			preemptorTasks[job.UID] = util.NewPriorityQueue(ssn.TaskOrderFn)
+			for _, task := range job.TaskStatusIndex[api.Pending] {
+				preemptorTasks[job.UID].Push(task)
+			}
+         ···
+      }
+      ```
       2. 检查抢占队列preemptorTasks是否存在preemptors(一组task)
       3. 若存在，最高优先级的task出队作为preemptor
       4. new一个statement对象用于commit和dicard操作
       5. preemptor进行preempt操作
       6. 检查并提交
-
-      - ***preempt操作逻辑如下***，PrePredicateFn、PrioritizeNodes（含BatchNodeOrderFn、NodeOrderMapFn、NodeOrderReduceFn）BuildVictimsPriorityQueue（含TaskOrderFn、JobOrderFn）Allocatable（含allocatableFns）Preemptable（含preemptableFns）这些需要找到对应的plugin实现，下面是部分plugin实现的fn：
+         
+      - ***preempt操作逻辑如下***，PrePredicateFn、PrioritizeNodes（含BatchNodeOrderFn、NodeOrderMapFn、NodeOrderReduceFn）BuildVictimsPriorityQueue（含TaskOrderFn、JobOrderFn）Allocatable（含allocatableFns）Preemptable（含preemptableFns）这些需要找到对应的plugin实现，下面是部分plugin实现的fn，**可以看出，如果使用volcano自带的实现，一个action的实现可能需要多个plugin**：
       </br>![image](https://github.com/user-attachments/assets/8171f05b-3c35-46df-9be0-0e5719069b1c)
 
       </br>图源：https://yost.top/2020/08/04/volcano-code-review/ </br>*\volcano-master\volcano-master\docs\user-guide\how_to_configure_scheduler.md*里面有更多的
@@ -358,7 +498,10 @@ uid: 1effe4d6-126c-42d6-a3a4-b811075c30f5
 7. 使用自定义 plugin
 - 文件 *\volcano-master\docs\design\custom-plugin.md* 给出了使用自定义plugin的方法
 
-7. References
+7. 一些可以参考的资料
 - 手把手教你构建自己的Action和Plugin https://www.bilibili.com/video/BV1pV4y1F7tB/?spm_id_from=333.1007.top_right_bar_window_history.content.click
 - Volcano 原理、源码分析 https://www.cnblogs.com/daniel-hutao/p/17935624.html#4-%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90
+- Volcano 源码解读（二）调度器 https://segmentfault.com/a/1190000044677221
+- volcano如何应对大规模任务系列之volcano关键对象 https://izsk.me/2023/11/12/volcano-key-resources/
+
 
